@@ -9,7 +9,7 @@ const options = {
       description: 'API para la gestión de la app de residuos',
     },
     servers: [{
-      url: 'http://localhost:3000'
+      url: 'http://localhost:8080'
     }],
   },
   apis: ['./routes/*.js'],  // Asegúrate de que la ruta coincida con la ubicación de tus archivos de ruta

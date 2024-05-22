@@ -60,13 +60,30 @@ router.post('/register', async (req, res) => {
       neighborhood,
       phone,
       address,
-      role_id: role || '1'
+      role_id: role || '1'  // Asegúrate de que el valor predeterminado corresponda con un ID válido en la tabla de roles
     });
-    res.status(201).send('User successfully registered.');
+    
+    // Eliminar la contraseña del objeto antes de enviarlo
+    const userResponse = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      neighborhood: user.neighborhood,
+      phone: user.phone,
+      address: user.address,
+      role_id: user.role_id
+    };
+
+    // Enviar una sola respuesta con la información del usuario y el estado HTTP 201
+    res.status(201).json({
+      message: 'User successfully registered.',
+      user: userResponse
+    });
   } catch (error) {
     res.status(400).send('Error registering user: ' + error.message);
   }
 });
+
 
 
 /**
@@ -97,8 +114,8 @@ router.post('/register', async (req, res) => {
  *         description: Error de autenticación, nombre de usuario o contraseña no válidos
  */
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ where: { username } });
+  const { email, password } = req.body;
+  const user = await User.findOne({ where: { email } });
 
   if (user && await bcrypt.compare(password, user.password)) {
     const token = jwt.sign({ userId: user.id }, 'your_secret_key', { expiresIn: '1h' }); // Cambia 'your_secret_key' por tu clave secreta
@@ -115,9 +132,13 @@ router.post('/login', async (req, res) => {
     };
 
     // Devuelve tanto el token como la información del usuario
-    res.json({ token, userInfo });
+    res.status(201).json({
+      message: 'User successfully registered.',
+      user: userInfo,
+      token: token
+    });
   } else {
-    res.status(401).send('Authentication failed.');
+    res.status(400).send('Authentication failed.');
   }
 });
 
