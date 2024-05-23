@@ -154,4 +154,54 @@ router.put('/:id/status', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /reports/{id}:
+ *   get:
+ *     summary: Obtiene los detalles de un reporte
+ *     description: Permite a los usuarios obtener toda la información de un reporte específico.
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del reporte a consultar
+ *     responses:
+ *       200:
+ *         description: Datos del reporte obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 status:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: Reporte no encontrado
+ *       500:
+ *         description: Error al obtener el reporte
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        const report = await Report.findByPk(req.params.id);
+        if (!report) {
+            return res.status(404).send('Report not found');
+        }
+        res.status(200).json(report);
+    } catch (error) {
+        res.status(500).send('Error retrieving report: ' + error.message);
+    }
+});
+
+
 module.exports = router;
