@@ -89,8 +89,6 @@ router.post('/add', async (req, res) => {
     }
 });
 
-
-
 /**
  * @swagger
  * /colletion-routine/update/:id:
@@ -151,6 +149,58 @@ router.post('/update/:id', async (req, res) => {
         }
     } catch (error) {
         res.status(400).send('Error al actualizar la rutina de recolección: ' + error.message);
+    }
+});
+
+/**
+ * @swagger
+ * /colletion-routine/update/:id:
+ *   post:
+ *     summary: Crear horario de recolección
+ *     description: Crea los horarios de recolección de residuos
+ *     tags: [ColletionRoutine]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - neighborhood
+ *               - startHour
+ *               - endHour
+ *               - weekdays
+ *             properties:
+ *               neighborhood:
+ *                 type: string
+ *               startHour:
+ *                 type: string
+ *               endHour:
+ *                 type: string
+ *               weekdays:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Rutina de recolección creada correctamente 
+ *       400:
+ *         description: El registro falló debido a un error de entrada
+ */
+router.delete('/delete/:id', async (req, res) => {
+    const id = req.params.id;
+    try {
+        const colletionRoutine = await ColletionRoutine.findByPk(id);
+        if(colletionRoutine){
+            colletionRoutine.destroy()
+            res.status(200).json({
+                message: 'Se elimino la rutina de recolección correctamente.',
+            });
+        } else {
+            res.status(404).json({
+                message: 'No se encontró la rutina de recolección con el ID proporcionado.'
+            });
+        }
+    } catch (error) {
+        res.status(400).send('Error al eliminar la rutina de recolección: ' + error.message);
     }
 });
 
