@@ -154,4 +154,13 @@ router.put('/:id/status', async (req, res) => {
     }
 });
 
+router.get("/imagen/:nombre", (req, res) => {
+    const nombreImagen = req.params.nombre;
+    try{
+        res.sendFile(path.join(__dirname, "../uploads", nombreImagen));
+    } catch (error) {
+        res.status(500).send('Error en recuperar la imagen: ' + error.message);
+    }
+});
+
 module.exports = router;

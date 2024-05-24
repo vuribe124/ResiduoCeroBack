@@ -4,6 +4,8 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./config/swaggerConfig'); 
 const authRoutes = require('./routes/authRoutes'); 
 const reportsRoutes = require('./routes/reportsRoutes'); 
+const colletionRoutineRoutes = require('./routes/colletionRoutineRoutes'); 
+const path = require("path");
 
 const app = express();
 
@@ -18,6 +20,7 @@ app.use(express.json());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/auth', authRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/colletion-routine', colletionRoutineRoutes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

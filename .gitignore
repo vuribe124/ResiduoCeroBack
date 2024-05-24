@@ -1,0 +1,4 @@
+/node_modules
+/config
+/database/databaseConfig.js
+/models
