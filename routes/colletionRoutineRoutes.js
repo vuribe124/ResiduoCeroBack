@@ -154,36 +154,25 @@ router.post('/update/:id', async (req, res) => {
 
 /**
  * @swagger
- * /colletion-routine/update/:id:
- *   post:
- *     summary: Crear horario de recolección
- *     description: Crea los horarios de recolección de residuos
+ * /colletion-routine/delete/{id}:
+ *   delete:
+ *     summary: Eliminar horario de recolección
+ *     description: Elimina los horarios de recolección de residuos por ID
  *     tags: [ColletionRoutine]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - neighborhood
- *               - startHour
- *               - endHour
- *               - weekdays
- *             properties:
- *               neighborhood:
- *                 type: string
- *               startHour:
- *                 type: string
- *               endHour:
- *                 type: string
- *               weekdays:
- *                 type: string
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: El ID de la rutina de recolección
  *     responses:
- *       201:
- *         description: Rutina de recolección creada correctamente 
+ *       200:
+ *         description: Rutina de recolección eliminada correctamente
+ *       404:
+ *         description: No se encontró la rutina de recolección con el ID proporcionado
  *       400:
- *         description: El registro falló debido a un error de entrada
+ *         description: Error al eliminar la rutina de recolección
  */
 router.delete('/delete/:id', async (req, res) => {
     const id = req.params.id;
@@ -201,6 +190,64 @@ router.delete('/delete/:id', async (req, res) => {
         }
     } catch (error) {
         res.status(400).send('Error al eliminar la rutina de recolección: ' + error.message);
+    }
+});
+
+/**
+ * @swagger
+ * /colletion-routine/get-by-neighborhood:
+ *   post:
+ *     summary: Obtener horario de recolección por barrio
+ *     description: Obtiene los horarios de recolección de residuos por barrio
+ *     tags: [ColletionRoutine]
+ *     parameters:
+ *       - in: body
+ *         name: neighborhood
+ *         schema:
+ *           type: object
+ *           required:
+ *             - neighborhood
+ *           properties:
+ *             neighborhood:
+ *               type: string
+ *         description: El nombre del barrio para buscar la rutina de recolección
+ *     responses:
+ *       200:
+ *         description: Horario de recolección obtenido correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ColletionRoutine'
+ *       404:
+ *         description: No se encontró ninguna rutina de recolección para el barrio proporcionado
+ *       400:
+ *         description: Error al obtener la rutina de recolección
+ */
+router.post('/get-by-neighborhood', async (req, res) => {
+    const { neighborhood } = req.body;
+    try {
+        const colletionRoutine = await ColletionRoutine.findAll({
+            where: { neighborhood }
+        });
+        if (colletionRoutine.length > 0) {
+            res.status(200).json({
+                message: 'Horario de recolección obtenido correctamente.',
+                data: colletionRoutine
+            });
+        } else {
+            res.status(404).json({
+                message: 'No se encontró ninguna rutina de recolección para el barrio proporcionado.'
+            });
+        }
+    } catch (error) {
+        res.status(400).send('Error al obtener la rutina de recolección: ' + error.message);
     }
 });
 
