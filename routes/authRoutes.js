@@ -2,6 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const router = express.Router();
 
@@ -139,6 +142,259 @@ router.post('/login', async (req, res) => {
     });
   } else {
     res.status(400).send('Authentication failed.');
+  }
+});
+
+/**
+ * @swagger
+ * /auth/{id}:
+ *   put:
+ *     summary: Actualizar un usuario existente
+ *     description: Actualiza los detalles del usuario especificado por su ID.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del usuario a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Nombre de usuario, debe ser único.
+ *               password:
+ *                 type: string
+ *                 description: Contraseña del usuario.
+ *               email:
+ *                 type: string
+ *                 description: Correo electrónico del usuario, debe ser único.
+ *               neighborhood:
+ *                 type: string
+ *                 description: Barrio del usuario.
+ *               phone:
+ *                 type: string
+ *                 description: Número de teléfono del usuario.
+ *               address:
+ *                 type: string
+ *                 description: Dirección del usuario.
+ *               role_id:
+ *                 type: integer
+ *                 description: ID del rol del usuario, por defecto es 1 para usuarios normales.
+ *     responses:
+ *       200:
+ *         description: Usuario actualizado exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: Usuario no encontrado.
+ *       500:
+ *         description: Error al actualizar el usuario.
+ */
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, password, email, neighborhood, phone, address, role_id } = req.body;
+
+    // Encuentra el usuario por ID
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).send('Usuario no encontrado');
+    }
+
+    // Actualiza el usuario
+    const updatedUser = await user.update({
+      username,
+      password,
+      email,
+      neighborhood,
+      phone,
+      address,
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).send('Error al actualizar el usuario: ' + error.message);
+  }
+});
+
+/**
+ * @swagger
+ * /auth/{id}/password:
+ *   put:
+ *     summary: Cambiar la contraseña de un usuario
+ *     description: Permite cambiar la contraseña de un usuario especificado por su ID.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID numérico del usuario cuya contraseña se actualizará
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 description: La nueva contraseña para el usuario.
+ *             required:
+ *               - password
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada con éxito.
+ *       400:
+ *         description: La solicitud no contiene la nueva contraseña necesaria.
+ *       404:
+ *         description: No se encuentra un usuario con el ID proporcionado.
+ *       500:
+ *         description: Error del servidor al intentar actualizar la contraseña.
+ */
+router.put('/users/:id/password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ status: 'error', message: 'La nueva contraseña es requerida.' });
+    }
+
+    // Encuentra el usuario por ID
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Usuario no encontrado.' });
+    }
+
+    // Hashear la nueva contraseña antes de guardarla
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Actualizar la contraseña del usuario
+    await user.update({ password: hashedPassword });
+
+    res.json({ status: 'success', message: 'Contraseña actualizada con éxito.' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'Error al actualizar la contraseña: ' + error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /auth/send-reset-password-email:
+ *   post:
+ *     summary: Enviar correo de restablecimiento de contraseña
+ *     description: Enviar un correo electrónico con un enlace para restablecer la contraseña de un usuario.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: El correo electrónico del usuario.
+ *             required:
+ *               - email
+ *     responses:
+ *       200:
+ *         description: Correo de restablecimiento de contraseña enviado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Usuario no encontrado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Error al enviar el correo de restablecimiento de contraseña.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ */
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,  // necesario para usar el puerto 465
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+router.post('/send-reset-password-email', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Usuario no encontrado.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const resetPasswordLink = `http://localhost:4200/auth/reset-password?token=${token}&id=${user.id}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Restablecimiento de Contraseña',
+      html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; background-color: #f9f9f9; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); padding: 20px;">
+          <h2 style="color: #333; text-align: center;">Restablecimiento de Contraseña</h2>
+          <p style="color: #555;">Hola,</p>
+          <p style="color: #555;">Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${resetPasswordLink}" style="display: inline-block; padding: 10px 20px; color: #ffffff; background-color: #007bff; border-radius: 5px; text-decoration: none;">Restablecer Contraseña</a>
+          </div>
+          <p style="color: #555;">Si no solicitaste este cambio, por favor ignora este correo.</p>
+          <p style="color: #555;">Gracias,</p>
+          <p style="color: #555;">El equipo de soporte</p>
+        </div>
+      </div>
+    `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ status: 'success', message: 'Correo de restablecimiento de contraseña enviado.' });
+  } catch (error) {
+    console.error('Error al enviar correo:', error);
+    res.status(500).json({ status: 'error', message: 'Error al enviar el correo de restablecimiento de contraseña: ' + error.message });
   }
 });
 
