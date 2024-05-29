@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../database/databaseConfig'); // Asegúrate de que la ruta es correcta
 
-const ColletionRoutine = sequelize.define('colletionRoutine', {
+const ColletionRoutine = sequelize.define('colletionroutines', {
     neighborhood: {
       type: DataTypes.STRING,
       allowNull: false

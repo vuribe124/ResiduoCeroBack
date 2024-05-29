@@ -1,8 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/colletionRoutine');
-const ColletionRoutine = require('../models/colletionRoutine');
+const ColletionRoutine = require('../models/colletionroutine');
 
 const router = express.Router();
 
