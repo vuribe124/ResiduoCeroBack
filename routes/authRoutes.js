@@ -398,5 +398,100 @@ router.post('/send-reset-password-email', async (req, res) => {
   }
 });
 
+
+/**
+ * @swagger
+ * /auth/send-email-contact:
+ *   post:
+ *     summary: Enviar mensaje de contacto
+ *     description: Enviar un mensaje de contacto desde un formulario en el sitio web.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 description: Nombre completo del remitente.
+ *               email:
+ *                 type: string
+ *                 description: Dirección de correo electrónico del remitente.
+ *               phone:
+ *                 type: string
+ *                 description: Número de teléfono del remitente.
+ *               message:
+ *                 type: string
+ *                 description: Mensaje proporcionado por el remitente.
+ *             required:
+ *               - fullName
+ *               - email
+ *               - message
+ *     responses:
+ *       200:
+ *         description: Mensaje enviado con éxito.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Error interno del servidor al intentar enviar el mensaje.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ */
+
+router.post('/send-email-contact', async (req, res) => {
+  const { fullName, email, message, phone } = req.body;
+  console.log("a", req.body.email)
+  try {
+      let transporter = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 465,
+          secure: true,
+          auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS
+          }
+      });
+
+      await transporter.sendMail({
+          from: `"Formulario de Contacto" <${process.env.EMAIL_USER}>`,
+          to: "vuribe124@gmail.com",
+          subject: "Nuevo mensaje de contacto",
+          html: `
+          <div style="font-family: Arial, sans-serif; color: #333;">
+              <h2 style="color: #4A90E2;">Mensaje de Contacto</h2>
+              <p><strong>Nombre Completo:</strong> ${fullName}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Teléfono:</strong> ${phone}</p>
+              <div style="background-color: #f2f2f2; padding: 10px; margin-top: 10px; border-left: 3px solid #4A90E2;">
+                  <strong>Mensaje:</strong>
+                  <p>${message}</p>
+              </div>
+          </div>`
+      });
+
+      res.send('Mensaje enviado con éxito');
+  } catch (error) {
+      console.error(error);
+      res.status(500).send('Error al enviar el mensaje');
+  }
+});
+
+
 module.exports = router;
 
